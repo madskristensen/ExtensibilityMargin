@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <Extern href="stdidcmd.h"/>
+  <Extern href="vsshlids.h"/>
+  <Include href="KnownImageIds.vsct"/>
+
+  <Commands package="guidPackage">
+    <Groups>
+      <Group guid="guidExtensibilityMarginPackageCmdSet" id="MyMenuGroup" priority="0x0600">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_TOOL_STANDARD"/>
+      </Group>
+    </Groups>
+
+    <Buttons>
+      <Button guid="guidExtensibilityMarginPackageCmdSet" id="MarginToggleCommandId" priority="0x0100" type="Button">
+        <Parent guid="guidExtensibilityMarginPackageCmdSet" id="MyMenuGroup" />
+        <Icon guid="ImageCatalogGuid" id="EditZone" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Toggle Extensibility Margin</ButtonText>
+          <LocCanonicalName>.View.ToggleExtensibilityMargin</LocCanonicalName>
+        </Strings>
+      </Button>
+    </Buttons>
+  </Commands>
+
+  <Symbols>
+    <GuidSymbol name="guidPackage" value="{182527ed-d306-4e47-9510-fca7fd83a32e}" />
+
+    <GuidSymbol name="guidExtensibilityMarginPackageCmdSet" value="{df59cf1c-76f7-407e-a6f9-86fa1583e830}">
+      <IDSymbol name="MyMenuGroup" value="0x1020" />
+      <IDSymbol name="MarginToggleCommandId" value="0x0100" />
+    </GuidSymbol>
+  </Symbols>
+</CommandTable>
