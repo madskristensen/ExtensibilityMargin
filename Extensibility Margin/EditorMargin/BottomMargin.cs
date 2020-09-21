@@ -331,7 +331,7 @@ namespace ExtensibilityMargin
 
 				_doc.FileActionOccurred -= FileChangedOnDisk;
 				_textView.Caret.PositionChanged -= CaretPositionChanged;
-                GeneralOptions.Saved -= OnOptionsSaved;
+				GeneralOptions.Saved -= OnOptionsSaved;
 
 				(_classifier as IDisposable)?.Dispose();
 			}
