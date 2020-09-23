@@ -1,6 +1,6 @@
 # Extensibility Margin
 
-[![Build status](https://ci.appveyor.com/api/projects/status/4pha1svkn0aqg3u4?svg=true)](https://ci.appveyor.com/project/madskristensen/tweakster)
+[![Build status](https://ci.appveyor.com/api/projects/status/urgqxelt4cufglpf?svg=true)](https://ci.appveyor.com/project/madskristensen/extensibilitymargin)
 
 A collection of minor fixes and tweaks for Visual Studio to reduce the paper cuts and make you a happier developer
 
