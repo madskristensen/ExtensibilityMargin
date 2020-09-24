@@ -26,7 +26,7 @@ Shows the encoding of the current document and more details on hover.
 ![Document encoding](art/margin-encoding.png)
 
 ## Content type
-Shows the content type of the ITextBuffer at the caret position. The over tooltip shows the name of the base content type.
+Shows the content type of the ITextBuffer at the caret position. The hover tooltip shows the name of the base content type.
 
 ## Classification
 Displays the name of the classification at the caret position in the document. The hover tooltip shows the inheritance hierarchy of the EditorFormatDefinition's BaseDefinition attribute.
