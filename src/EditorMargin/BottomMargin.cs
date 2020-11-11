@@ -27,6 +27,8 @@ namespace ExtensibilityMargin
 
 		public BottomMargin(IWpfTextView textView, IClassifierAggregatorService classifier, ITextDocumentFactoryService documentService)
 		{
+            OnOptionsSaved(null, GeneralOptions.Instance);
+
 			_textView = textView;
 			_classifier = classifier.GetClassifier(textView.TextBuffer);
 
@@ -66,7 +68,7 @@ namespace ExtensibilityMargin
 
 		private void OnOptionsSaved(object sender, GeneralOptions e)
 		{
-			Visibility = GeneralOptions.Instance.Enabled ? Visibility.Visible : Visibility.Collapsed;
+			Visibility = e.Enabled ? Visibility.Visible : Visibility.Collapsed;
 		}
 
 		private void FileChangedOnDisk(object sender, TextDocumentFileActionEventArgs e)
