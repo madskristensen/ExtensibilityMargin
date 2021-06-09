@@ -11,7 +11,7 @@ namespace ExtensibilityMargin
         public const string Name = "Extensibility Margin";
         public const string Description = @"Shows relevant information about the current file and language to extensibility authors";
         public const string Language = "en-US";
-        public const string Version = "0.5";
+        public const string Version = "1.0";
         public const string Author = "Mads Kristensen";
         public const string Tags = "";
     }

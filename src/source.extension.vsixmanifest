@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="41b4c077-6d9f-4e0a-a356-988baf3e830a" Version="0.5" Language="en-US" Publisher="Mads Kristensen" />
+    <Identity Id="41b4c077-6d9f-4e0a-a356-988baf3e830a" Version="1.0" Language="en-US" Publisher="Mads Kristensen" />
     <DisplayName>Extensibility Margin</DisplayName>
     <Description xml:space="preserve">Shows relevant information about the current file and language to extensibility authors</Description>
     <MoreInfo>https://github.com/madskristensen/ExtensibilityMargin</MoreInfo>
