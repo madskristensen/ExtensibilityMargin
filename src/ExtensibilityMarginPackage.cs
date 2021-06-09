@@ -9,7 +9,6 @@ namespace ExtensibilityMargin
     [InstalledProductRegistration(Vsix.Name, Vsix.Description, Vsix.Version)]
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [Guid(PackageGuids.guidPackageString)]
-    [ProvideProfile(typeof(DialogPageProvider.General), "Environment", Vsix.Name, 0, 0, true)]
     [ProvideMenuResource("Menus.ctmenu", 1)]    
     [ProvideBindingPath()]
     public sealed class ExtensibilityMarginPackage : AsyncPackage
