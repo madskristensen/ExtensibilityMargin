@@ -61,7 +61,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ github.event.repository.name }}.vsix
-          path: _built/**/*.vsix
+          path: src/bin/${{ env.Configuration }}/*.vsix
+          if-no-files-found: error
 
   publish:
     if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
