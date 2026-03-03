@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: Build
+
+permissions:
+  contents: read
+  checks: write
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    outputs:
+      version: ${{ steps.vsix_version.outputs.version-number }}
+    name: Build
+    runs-on: windows-latest
+    env:
+      Configuration: Release
+      DeployExtension: False
+      VsixManifestPath: src/source.extension.vsixmanifest
+      VsixManifestSourcePath: src/source.extension.cs
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup .NET build dependencies
+        uses: timheuer/bootstrap-dotnet@v1
+        with:
+          nuget: "false"
+          sdk: "false"
+          msbuild: "true"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.slnx', '**/*.sln', '**/*.csproj', '**/packages.config', '**/packages.lock.json', '**/nuget.config') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Increment VSIX version
+        id: vsix_version
+        uses: timheuer/vsix-version-stamp@v2
+        with:
+          manifest-file: ${{ env.VsixManifestPath }}
+          vsix-token-source-file: ${{ env.VsixManifestSourcePath }}
+
+      - name: Restore NuGet packages
+        run: msbuild /v:m /t:restore "Extensibility Margin.sln"
+
+      - name: Build
+        run: msbuild /v:m /p:Configuration=${{ env.Configuration }} /p:DeployExtension=${{ env.DeployExtension }} /p:OutDir=_built\ "Extensibility Margin.sln"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}.vsix
+          path: _built/**/*.vsix
+
+  publish:
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download Package artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}.vsix
+
+      - name: Resolve VSIX file path
+        id: vsix_file
+        shell: pwsh
+        run: |
+          $vsix = Get-ChildItem -Path . -Recurse -Filter *.vsix | Select-Object -First 1 -ExpandProperty FullName
+
+          if ([string]::IsNullOrWhiteSpace($vsix)) {
+            throw "No VSIX artifact found."
+          }
+
+          "path=$vsix" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Upload to Open VSIX
+        uses: timheuer/openvsixpublish@v1
+        with:
+          vsix-file: ${{ steps.vsix_file.outputs.path }}
+
+      - name: Publish extension to Marketplace
+        if: ${{ (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')) && hashFiles('vs-publish.json') != '' }}
+        uses: cezarypiatek/VsixPublisherAction@1.0
+        with:
+          extension-file: ${{ steps.vsix_file.outputs.path }}
+          publish-manifest-file: vs-publish.json
+          personal-access-code: ${{ secrets.VS_PUBLISHER_ACCESS_TOKEN }}
+
+      - name: Tag and release
+        if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]') }}
+        uses: softprops/action-gh-release@v2
+        with:
+          body: release ${{ needs.build.outputs.version }}
+          generate_release_notes: true
+          tag_name: ${{ needs.build.outputs.version }}
+          files: |
+            **/*.vsix
