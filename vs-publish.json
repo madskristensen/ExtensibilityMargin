@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json.schemastore.org/vsix-publish",
+  "categories": [ "coding" ],
+  "identity": {
+    "internalName": "ExtensibilityMargin",
+    "tags": [ "editor", "margin", "extensibility" ]
+  },
+  "assetFiles": [
+    {
+      "pathOnDisk": "art/margin-toggle.png",
+      "targetPath": "art/margin-toggle.png"
+    },
+    {
+      "pathOnDisk": "art/margin.png",
+      "targetPath": "art/margin.png"
+    },
+    {
+      "pathOnDisk": "art/margin-encoding.png",
+      "targetPath": "art/margin-encoding.png"
+    },
+    {
+      "pathOnDisk": "art/margin-classification.png",
+      "targetPath": "art/margin-classification.png"
+    },
+    {
+      "pathOnDisk": "art/margin-selection.png",
+      "targetPath": "art/margin-selection.png"
+    }
+  ],
+  "overview": "README.md",
+  "publisher": "MadsKristensen",
+  "repo": "https://github.com/madskristensen/ExtensibilityMargin"
+}
