@@ -1,9 +1,5 @@
-# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
 name: Build
-
-permissions:
-  contents: read
-  checks: write
 
 on:
   push:
@@ -12,8 +8,14 @@ on:
     branches: [master]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
+    permissions:
+      contents: read
     outputs:
       version: ${{ steps.vsix_version.outputs.version-number }}
     name: Build
@@ -21,23 +23,23 @@ jobs:
     env:
       Configuration: Release
       DeployExtension: False
-      VsixManifestPath: src/source.extension.vsixmanifest
-      VsixManifestSourcePath: src/source.extension.cs
+      Solution: ExtensibilityMargin.slnx
+      VsixManifestPath: src\source.extension.vsixmanifest
+      VsixManifestSourcePath: src\source.extension.cs
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+      - uses: actions/checkout@v7
 
-      - name: Setup .NET build dependencies
-        uses: timheuer/bootstrap-dotnet@v1
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
         with:
-          nuget: "false"
-          sdk: "false"
-          msbuild: "true"
+          dotnet-version: 9.0.x
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.slnx', '**/*.sln', '**/*.csproj', '**/packages.config', '**/packages.lock.json', '**/nuget.config') }}
@@ -46,22 +48,22 @@ jobs:
 
       - name: Increment VSIX version
         id: vsix_version
-        uses: timheuer/vsix-version-stamp@v2
+        uses: madskristensen/vsix-version-stamp@v2
         with:
           manifest-file: ${{ env.VsixManifestPath }}
           vsix-token-source-file: ${{ env.VsixManifestSourcePath }}
 
       - name: Restore NuGet packages
-        run: msbuild /v:m /t:restore "Extensibility Margin.sln"
+        run: msbuild ${{ env.Solution }} /v:m /t:Restore /p:Configuration=${{ env.Configuration }}
 
       - name: Build
-        run: msbuild /v:m /p:Configuration=${{ env.Configuration }} /p:DeployExtension=${{ env.DeployExtension }} /p:OutDir=_built\ "Extensibility Margin.sln"
+        run: msbuild ${{ env.Solution }} /v:m /m /p:Configuration=${{ env.Configuration }} /p:DeployExtension=${{ env.DeployExtension }}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ github.event.repository.name }}.vsix
-          path: src/_built/**/*.vsix
+          path: src\bin\${{ env.Configuration }}\net48\ExtensibilityMargin.vsix
           if-no-files-found: error
 
   publish:
@@ -72,43 +74,31 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
       - name: Download Package artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ github.event.repository.name }}.vsix
 
-      - name: Resolve VSIX file path
-        id: vsix_file
-        shell: pwsh
-        run: |
-          $vsix = Get-ChildItem -Path . -Recurse -Filter *.vsix | Select-Object -First 1 -ExpandProperty FullName
-
-          if ([string]::IsNullOrWhiteSpace($vsix)) {
-            throw "No VSIX artifact found."
-          }
-
-          "path=$vsix" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-
       - name: Upload to Open VSIX
-        uses: timheuer/openvsixpublish@v1
+        uses: madskristensen/publish-vsixgallery@v1
         with:
-          vsix-file: ${{ steps.vsix_file.outputs.path }}
+          vsix-file: ExtensibilityMargin.vsix
 
       - name: Publish extension to Marketplace
-        if: ${{ (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')) && hashFiles('vs-publish.json') != '' }}
-        uses: cezarypiatek/VsixPublisherAction@1.0
+        if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]') }}
+        uses: madskristensen/publish-marketplace@v2
         with:
-          extension-file: ${{ steps.vsix_file.outputs.path }}
+          extension-file: ExtensibilityMargin.vsix
           publish-manifest-file: vs-publish.json
           personal-access-code: ${{ secrets.VS_PUBLISHER_ACCESS_TOKEN }}
 
       - name: Tag and release
         if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]') }}
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           body: release ${{ needs.build.outputs.version }}
           generate_release_notes: true

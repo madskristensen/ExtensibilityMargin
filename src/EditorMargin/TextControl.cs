@@ -1,8 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using Microsoft.VisualStudio.PlatformUI;
-using Microsoft.VisualStudio.Shell;
 
 namespace ExtensibilityMargin
 {
@@ -13,15 +11,17 @@ namespace ExtensibilityMargin
 
         public TextControl(string name, string value = "pending...")
         {
+            VerticalAlignment = VerticalAlignment.Center;
+
             _lblName = new Label();
-            _lblName.Padding = new Thickness(3, 3, 0, 3);
+            _lblName.Padding = new Thickness(3, 0, 0, 0);
             _lblName.FontWeight = FontWeights.Bold;
             _lblName.Content = name + ": ";
             _lblName.SetResourceReference(TextBlock.ForegroundProperty, EnvironmentColors.ComboBoxFocusedTextBrushKey);
             Children.Add(_lblName);
 
             _lblValue = new Label();
-            _lblValue.Padding = new Thickness(0, 3, 10, 3);
+            _lblValue.Padding = new Thickness(0, 0, 10, 0);
             _lblValue.Content = value;
             _lblValue.SetResourceReference(TextBlock.ForegroundProperty, EnvironmentColors.ComboBoxFocusedTextBrushKey);
             Children.Add(_lblValue);
@@ -39,19 +39,9 @@ namespace ExtensibilityMargin
             }
         }
 
-        public void SetTooltip(string tooltip, bool preserveFormatting = false)
+        public void SetTooltip(string tooltip)
         {
-            if (preserveFormatting)
-            {
-                Label label = new Label();
-                label.Content = tooltip;
-                label.FontFamily = new FontFamily("Lucida Console");
-                ToolTip = label;
-            }
-            else
-            {
-                ToolTip = tooltip;
-            }
+            ToolTip = tooltip;
         }
     }
 }

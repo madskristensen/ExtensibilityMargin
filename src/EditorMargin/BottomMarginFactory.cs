@@ -1,5 +1,4 @@
 using System.ComponentModel.Composition;
-using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
@@ -9,8 +8,8 @@ namespace ExtensibilityMargin
 {
     [Export(typeof(IWpfTextViewMarginProvider))]
     [Name(BottomMargin.MarginName)]
-    [Order(After = PredefinedMarginNames.BottomControl)]
-    [MarginContainer(PredefinedMarginNames.Bottom)]
+    [Order(After = "BottomRightCornerSpacerMargin", Before = "LineColCharMargin")]
+    [MarginContainer(PredefinedMarginNames.BottomRightCorner)]
     [ContentType("text")]
     [TextViewRole(PredefinedTextViewRoles.Zoomable)]
     class BottomMarginFactory : IWpfTextViewMarginProvider
@@ -24,15 +23,12 @@ namespace ExtensibilityMargin
         [Import]
         IViewTagAggregatorFactoryService _tagAggregatorFactory = null;
 
-        [Import]
-        public ITextDocumentFactoryService _documentService = null;
-
         public IWpfTextViewMargin CreateMargin(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin marginContainer)
         {
-            if (wpfTextViewHost == null || _classifierService == null || _bufferClassifierService == null || _tagAggregatorFactory == null || _documentService == null)
+            if (wpfTextViewHost == null || _classifierService == null || _bufferClassifierService == null || _tagAggregatorFactory == null)
                 return null;
 
-            return new BottomMargin(wpfTextViewHost.TextView, _classifierService, _bufferClassifierService, _tagAggregatorFactory, _documentService);
+            return new BottomMargin(wpfTextViewHost.TextView, _classifierService, _bufferClassifierService, _tagAggregatorFactory);
         }
     }
 }

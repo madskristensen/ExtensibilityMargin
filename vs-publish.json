@@ -15,16 +15,8 @@
       "targetPath": "art/margin.png"
     },
     {
-      "pathOnDisk": "art/margin-encoding.png",
-      "targetPath": "art/margin-encoding.png"
-    },
-    {
       "pathOnDisk": "art/margin-classification.png",
       "targetPath": "art/margin-classification.png"
-    },
-    {
-      "pathOnDisk": "art/margin-selection.png",
-      "targetPath": "art/margin-selection.png"
     }
   ],
   "overview": "README.md",

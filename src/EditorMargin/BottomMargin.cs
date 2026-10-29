@@ -24,15 +24,14 @@ namespace ExtensibilityMargin
         private readonly ITagAggregator<ClassificationTag> _classificationTagAggregator;
         private readonly IClassifier _viewClassifier;
         private readonly List<ITextBuffer> _candidateBuffers;
-        private readonly TextControl _lblClassification, _lblEncoding, _lblContentType, _lblSelection, _lblRoles;
-        private bool _updatingEncodingLabel, _updatingClassificationLabel, _updatingContentSelectionLabel, _updatingRolesLabel, _updatingTypeLabel;
+        private readonly TextControl _lblClassification, _lblContentType, _lblRoles;
+        private bool _updatingClassificationLabel, _updatingRolesLabel, _updatingTypeLabel;
         private CancellationTokenSource _caretUpdateCancellation;
         private ITextBuffer _lastContentTypeBuffer;
         private ITextSnapshot _lastClassificationSnapshot;
         private int _lastClassificationPosition = -1;
-        private readonly ITextDocument _doc;
 
-        public BottomMargin(IWpfTextView textView, IViewClassifierAggregatorService classifier, IClassifierAggregatorService bufferClassifierService, IViewTagAggregatorFactoryService tagAggregatorFactory, ITextDocumentFactoryService documentService)
+        public BottomMargin(IWpfTextView textView, IViewClassifierAggregatorService classifier, IClassifierAggregatorService bufferClassifierService, IViewTagAggregatorFactoryService tagAggregatorFactory)
         {
             _textView = textView;
             _bufferClassifierService = bufferClassifierService;
@@ -43,9 +42,8 @@ namespace ExtensibilityMargin
             SetResourceReference(BackgroundProperty, EnvironmentColors.ScrollBarBackgroundBrushKey);
 
             ClipToBounds = true;
-
-            _lblEncoding = new TextControl("Encoding");
-            Children.Add(_lblEncoding);
+            LastChildFill = false;
+            VerticalAlignment = VerticalAlignment.Center;
 
             _lblContentType = new TextControl("Content type");
             Children.Add(_lblContentType);
@@ -53,16 +51,8 @@ namespace ExtensibilityMargin
             _lblClassification = new TextControl("Classification");
             Children.Add(_lblClassification);
 
-            _lblSelection = new TextControl("Selection");
-            Children.Add(_lblSelection);
-
             _lblRoles = new TextControl("Roles");
             Children.Add(_lblRoles);
-
-            if (documentService.TryGetTextDocument(textView.TextDataModel.DocumentBuffer, out _doc))
-            {
-                _doc.FileActionOccurred += FileChangedOnDisk;
-            }
 
             textView.Caret.PositionChanged += CaretPositionChanged;
             _viewClassifier.ClassificationChanged += ViewClassifierOnClassificationChanged;
@@ -93,23 +83,7 @@ namespace ExtensibilityMargin
 
             UpdateClassificationLabelAsync(true).FileAndForget(nameof(BottomMargin));
             UpdateContentTypeLabelAsync().FileAndForget(nameof(BottomMargin));
-            UpdateContentSelectionLabelAsync().FileAndForget(nameof(BottomMargin));
             UpdateRolesLabelAsync().FileAndForget(nameof(BottomMargin));
-
-            if (_doc != null)
-            {
-                UpdateEncodingLabelAsync(_doc).FileAndForget(nameof(BottomMargin));
-            }
-        }
-
-        private void FileChangedOnDisk(object sender, TextDocumentFileActionEventArgs e)
-        {
-            if (!ShouldUpdate())
-            {
-                return;
-            }
-
-            UpdateEncodingLabelAsync(_doc).FileAndForget(nameof(BottomMargin));
         }
 
         private void CaretPositionChanged(object sender, CaretPositionChangedEventArgs e)
@@ -143,7 +117,6 @@ namespace ExtensibilityMargin
 
                 UpdateClassificationLabelAsync().FileAndForget(nameof(BottomMargin));
                 UpdateContentTypeLabelAsync().FileAndForget(nameof(BottomMargin));
-                UpdateContentSelectionLabelAsync().FileAndForget(nameof(BottomMargin));
             }
             catch (OperationCanceledException)
             {
@@ -155,44 +128,6 @@ namespace ExtensibilityMargin
             _caretUpdateCancellation?.Cancel();
             _caretUpdateCancellation?.Dispose();
             _caretUpdateCancellation = null;
-        }
-
-        private async Task UpdateEncodingLabelAsync(ITextDocument doc)
-        {
-            if (!ShouldUpdate() || _updatingEncodingLabel)
-            {
-                return;
-            }
-
-            _updatingEncodingLabel = true;
-
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
-            try
-            {
-                if (!ShouldUpdate())
-                {
-                    return;
-                }
-
-                var preamble = doc.Encoding.GetPreamble();
-                var bom = preamble != null && preamble.Length > 2 ? " - BOM" : string.Empty;
-
-                _lblEncoding.Value = doc.Encoding.EncodingName + bom;
-                _lblEncoding.SetTooltip("Codepage:         " + doc.Encoding.CodePage + Environment.NewLine +
-                                        "Windows codepage: " + doc.Encoding.CodePage + Environment.NewLine +
-                                        "Header name:      " + doc.Encoding.HeaderName + Environment.NewLine +
-                                        "Body name:        " + doc.Encoding.BodyName,
-                                        true);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.Write(ex);
-            }
-            finally
-            {
-                _updatingEncodingLabel = false;
-            }
         }
 
         private async Task UpdateContentTypeLabelAsync()
@@ -359,46 +294,6 @@ namespace ExtensibilityMargin
             }
         }
 
-        private async Task UpdateContentSelectionLabelAsync()
-        {
-            if (!ShouldUpdate() || _updatingContentSelectionLabel)
-            {
-                return;
-            }
-
-            _updatingContentSelectionLabel = true;
-
-            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-
-            try
-            {
-                if (!ShouldUpdate())
-                {
-                    return;
-                }
-
-                var start = _textView.Selection.Start.Position.Position;
-                var end = _textView.Selection.End.Position.Position;
-
-                if (end == start)
-                {
-                    _lblSelection.Value = start.ToString();
-                }
-                else
-                {
-                    _lblSelection.Value = $"{start}-{end} ({end - start} chars)";
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Trace.Fail(ex.ToString());
-            }
-            finally
-            {
-                _updatingContentSelectionLabel = false;
-            }
-        }
-
         private async Task UpdateRolesLabelAsync()
         {
             if (!ShouldUpdate() || _updatingRolesLabel)
@@ -536,7 +431,7 @@ namespace ExtensibilityMargin
             get
             {
                 ThrowIfDisposed();
-                return ActualHeight;
+                return ActualWidth;
             }
         }
 
@@ -561,11 +456,6 @@ namespace ExtensibilityMargin
             {
                 GC.SuppressFinalize(this);
                 _isDisposed = true;
-
-                if (_doc != null)
-                {
-                    _doc.FileActionOccurred -= FileChangedOnDisk;
-                }
 
                 _textView.Caret.PositionChanged -= CaretPositionChanged;
                 _viewClassifier.ClassificationChanged -= ViewClassifierOnClassificationChanged;
