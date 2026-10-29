@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -36,9 +34,7 @@ namespace ExtensibilityMargin
         private IContentType _lastContentType;
         private ITextSnapshot _lastSnapshot;
         private int _lastPosition = -1;
-        private readonly ConcurrentQueue<ClassificationChangedEventArgs> _classificationChanges = new ConcurrentQueue<ClassificationChangedEventArgs>();
-        private int _refreshQueued;
-        private int _backgroundRefreshRequested;
+        private readonly DiagnosticRefreshQueue _pendingChanges = new DiagnosticRefreshQueue();
         private bool _forceRefresh = true;
         private bool _buffersDirty = true;
         private bool _isDisposed;
@@ -93,6 +89,7 @@ namespace ExtensibilityMargin
 
         private void UpdateActivity()
         {
+            _pendingChanges.SetActive(ShouldUpdate);
             if (ShouldUpdate)
             {
                 _forceRefresh = true;
@@ -101,6 +98,8 @@ namespace ExtensibilityMargin
             else
             {
                 _updateTimer.Stop();
+                _contentType.ResetCopyConfirmation();
+                _classification.ResetCopyConfirmation();
                 ReleaseClassifiers();
                 _buffersDirty = true;
                 _lastSnapshot = null;
@@ -111,8 +110,7 @@ namespace ExtensibilityMargin
         {
             if (!Dispatcher.CheckAccess())
             {
-                Interlocked.Exchange(ref _backgroundRefreshRequested, 1);
-                QueueUIRefresh();
+                QueueUIRefresh(_pendingChanges.Request(force: true));
                 return;
             }
             if (!ShouldUpdate)
@@ -126,9 +124,9 @@ namespace ExtensibilityMargin
             }
         }
 
-        private void QueueUIRefresh()
+        private void QueueUIRefresh(bool schedule)
         {
-            if (Interlocked.Exchange(ref _refreshQueued, 1) == 0)
+            if (schedule)
             {
                 RefreshOnUIThreadAsync().FileAndForget(nameof(BottomMargin));
             }
@@ -137,15 +135,24 @@ namespace ExtensibilityMargin
         private async Task RefreshOnUIThreadAsync()
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-            Interlocked.Exchange(ref _refreshQueued, 0);
-            int pendingChanges = _classificationChanges.Count;
-            while (pendingChanges-- > 0 && _classificationChanges.TryDequeue(out ClassificationChangedEventArgs change))
+            DiagnosticRefreshQueue.Batch batch = _pendingChanges.Drain();
+            if (!ShouldUpdate)
             {
-                OnClassificationChanged(this, change);
+                return;
             }
-            if (Interlocked.Exchange(ref _backgroundRefreshRequested, 0) != 0)
+            _buffersDirty |= batch.BuffersDirty;
+            if (batch.Force)
             {
                 QueueRefresh(true);
+                return;
+            }
+            foreach (SnapshotSpan span in batch.Classifications)
+            {
+                OnClassificationChanged(this, new ClassificationChangedEventArgs(span));
+            }
+            foreach (IMappingSpan span in batch.Tags)
+            {
+                OnTagsChanged(this, new TagsChangedEventArgs(span));
             }
         }
 
@@ -163,8 +170,7 @@ namespace ExtensibilityMargin
         {
             if (!Dispatcher.CheckAccess())
             {
-                _classificationChanges.Enqueue(e);
-                QueueUIRefresh();
+                QueueUIRefresh(_pendingChanges.Request(classification: e.ChangeSpan));
                 return;
             }
             if (!ShouldUpdate)
@@ -180,23 +186,43 @@ namespace ExtensibilityMargin
             }
             ITextSnapshot snapshot = changedBuffer.CurrentSnapshot;
             SnapshotSpan changed = e.ChangeSpan.TranslateTo(snapshot, SpanTrackingMode.EdgeInclusive);
-            int position = Math.Max(0, Math.Min(caret.Value.Position, snapshot.Length - 1));
-            if (changed.Contains(position) || (changed.Length == 0 && changed.Start.Position == position))
+            if (DiagnosticChangeFilter.ContainsCaret(changed, caret.Value.Position))
             {
                 QueueRefresh(true);
             }
         }
 
-        private void OnTagsChanged(object sender, TagsChangedEventArgs e) => QueueRefresh(true);
+        private void OnTagsChanged(object sender, TagsChangedEventArgs e)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                QueueUIRefresh(_pendingChanges.Request(tags: e.Span));
+                return;
+            }
+            if (ShouldUpdate && DiagnosticChangeFilter.ContainsCaret(e.Span, _textView.TextSnapshot,
+                _textView.Caret.Position.BufferPosition.Position))
+            {
+                QueueRefresh(true);
+            }
+        }
 
         private void OnGraphBuffersChanged(object sender, GraphBuffersChangedEventArgs e)
         {
-            _buffersDirty = true;
-            QueueRefresh(true);
+            InvalidateBuffers();
         }
 
         private void OnGraphContentTypeChanged(object sender, GraphBufferContentTypeChangedEventArgs e)
         {
+            InvalidateBuffers();
+        }
+
+        private void InvalidateBuffers()
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                QueueUIRefresh(_pendingChanges.Request(force: true, buffersDirty: true));
+                return;
+            }
             _buffersDirty = true;
             QueueRefresh(true);
         }
@@ -369,6 +395,7 @@ namespace ExtensibilityMargin
             try
             {
                 Clipboard.SetText(GetContentDetails() + Environment.NewLine + Environment.NewLine + DiagnosticDetails.Classifications(_classificationTypes));
+                ((TextControl)sender).ShowCopyConfirmation();
             }
             catch (ExternalException ex)
             {
@@ -435,6 +462,9 @@ namespace ExtensibilityMargin
                 return;
             }
             _isDisposed = true;
+            _pendingChanges.Dispose();
+            _contentType.ResetCopyConfirmation();
+            _classification.ResetCopyConfirmation();
             _updateTimer.Stop();
             _updateTimer.Tick -= OnUpdateTick;
             ReleaseClassifiers();

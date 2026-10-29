@@ -40,8 +40,8 @@ namespace ExtensibilityMargin.Tests
             string summary = DiagnosticDetails.ContentTypeSummary(Type("CSharp"), "projection", "Razor", Array.Empty<string>());
 
             StringAssert.Contains(summary, "Buffer context" + Environment.NewLine + "View: projection" + Environment.NewLine + "Document: Razor");
-            Assert.IsFalse(summary.Contains("Also matches"));
-            Assert.IsFalse(summary.Contains("Text view roles"));
+            Assert.DoesNotContain("Also matches", summary);
+            Assert.DoesNotContain("Text view roles", summary);
         }
 
         [TestMethod]

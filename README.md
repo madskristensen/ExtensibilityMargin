@@ -46,11 +46,11 @@ Displays the primary classification at the caret. Hover to see all overlapping c
 
 ### Copy diagnostics
 
-Click either value to copy content types, text view roles, and classification details to the clipboard. The report contains no document text or file paths.
+Click either value to copy content types, text view roles, and classification details to the clipboard. A brief `Copied` confirmation appears before the latest value returns. The report contains no document text or file paths.
 
 ### Lightweight updates
 
-Caret and classification updates are coalesced, and classification changes away from the caret are ignored. Classifier services are initialized only when needed and released while the margin or editor tab is hidden. Projection-buffer and content-type changes invalidate cached diagnostics.
+Caret and classification updates are coalesced, and classification/tag changes away from the caret are ignored. Background notifications are bounded; large bursts collapse into one full refresh instead of retaining an unlimited queue of snapshots. Classifier services are initialized only when needed and released while the margin or editor tab is hidden. Projection-buffer and content-type changes invalidate cached diagnostics.
 
 ## Typical workflows
 

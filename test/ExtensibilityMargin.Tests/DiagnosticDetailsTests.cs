@@ -48,8 +48,8 @@ namespace ExtensibilityMargin.Tests
             DiagnosticDetails.ContentType(ContentType("CSharp", ContentType("code")), "CSharp", "CSharp", new[] { "OLD_ROLE" });
             string details = DiagnosticDetails.ContentType(ContentType("plaintext"), "plaintext", "plaintext", new[] { "DOCUMENT" });
 
-            Assert.IsFalse(details.Contains("CSharp"));
-            Assert.IsFalse(details.Contains("OLD_ROLE"));
+            Assert.DoesNotContain("CSharp", details);
+            Assert.DoesNotContain("OLD_ROLE", details);
             StringAssert.Contains(details, "Content type: plaintext");
         }
 

@@ -60,7 +60,22 @@ jobs:
         run: msbuild ${{ env.Solution }} /v:m /m /p:Configuration=${{ env.Configuration }} /p:DeployExtension=${{ env.DeployExtension }}
 
       - name: Run regression tests
+        id: tests
         run: dotnet test test\ExtensibilityMargin.Tests\ExtensibilityMargin.Tests.csproj --configuration ${{ env.Configuration }} --no-build --no-restore --logger trx --results-directory TestResults
+
+      - name: Report test results
+        if: ${{ !cancelled() && (steps.tests.outcome == 'success' || steps.tests.outcome == 'failure') }}
+        uses: dorny/test-reporter@v3
+        with:
+          name: Unit Tests
+          path: TestResults\*.trx
+          path-replace-backslashes: true
+          reporter: dotnet-trx
+          use-actions-summary: true
+          report-title: Unit test results
+          list-tests: failed
+          fail-on-error: true
+          fail-on-empty: true
 
       - name: Upload test results
         if: always()

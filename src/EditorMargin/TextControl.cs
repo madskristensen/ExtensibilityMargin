@@ -4,6 +4,7 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 
@@ -14,10 +15,17 @@ namespace ExtensibilityMargin
         private readonly string _name;
         private readonly TextBlock _text;
         private string _tooltipText;
+        private string _value;
+        private readonly DispatcherTimer _copyTimer;
 
         public TextControl(string name, string value = "pending...")
         {
             _name = name;
+            _copyTimer = new DispatcherTimer(DispatcherPriority.Background, Dispatcher)
+            {
+                Interval = TimeSpan.FromSeconds(1.5),
+            };
+            _copyTimer.Tick += (sender, e) => ResetCopyConfirmation();
             VerticalAlignment = VerticalAlignment.Center;
             Padding = new Thickness(4, 0, 8, 0);
             BorderThickness = new Thickness(0);
@@ -41,15 +49,31 @@ namespace ExtensibilityMargin
 
         public string Value
         {
-            get => _text.Text;
+            get => _value;
             set
             {
-                if (!string.Equals(_text.Text, value, StringComparison.Ordinal))
+                _value = value;
+                if (!_copyTimer.IsEnabled && !string.Equals(_text.Text, value, StringComparison.Ordinal))
                 {
                     _text.Text = value;
                     AutomationProperties.SetName(this, _name + ": " + value);
                 }
             }
+        }
+
+        public void ShowCopyConfirmation()
+        {
+            _copyTimer.Stop();
+            _text.Text = "Copied";
+            AutomationProperties.SetName(this, "Editor diagnostics copied");
+            _copyTimer.Start();
+        }
+
+        public void ResetCopyConfirmation()
+        {
+            _copyTimer.Stop();
+            _text.Text = _value;
+            AutomationProperties.SetName(this, _name + ": " + _value);
         }
 
         public void SetTooltip(string tooltip)
