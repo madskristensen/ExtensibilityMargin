@@ -1,0 +1,12 @@
+<Project Sdk="MSTest.Sdk/4.0.1">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <UseVSTest>true</UseVSTest>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\ExtensibilityMargin.csproj" />
+    <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.0.32112.339" />
+  </ItemGroup>
+</Project>

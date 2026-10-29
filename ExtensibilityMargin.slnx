@@ -1,8 +1,6 @@
 <Solution>
-  <Configurations>
-    <Platform Name="Any CPU" />
-  </Configurations>
   <Project Path="src\ExtensibilityMargin.csproj" Id="a335a527-57ab-451d-b42d-d9555f553e73">
-    <Deploy Solution="Debug|Any CPU" />
+    <Deploy Solution="Debug|*" />
   </Project>
+  <Project Path="test/ExtensibilityMargin.Tests/ExtensibilityMargin.Tests.csproj" />
 </Solution>

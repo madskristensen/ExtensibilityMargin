@@ -59,6 +59,17 @@ jobs:
       - name: Build
         run: msbuild ${{ env.Solution }} /v:m /m /p:Configuration=${{ env.Configuration }} /p:DeployExtension=${{ env.DeployExtension }}
 
+      - name: Run regression tests
+        run: dotnet test test\ExtensibilityMargin.Tests\ExtensibilityMargin.Tests.csproj --configuration ${{ env.Configuration }} --no-build --no-restore --logger trx --results-directory TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: TestResults\*.trx
+          if-no-files-found: ignore
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:

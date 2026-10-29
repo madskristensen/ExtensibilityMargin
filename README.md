@@ -24,35 +24,40 @@ If you work with MEF editor components, taggers, classifiers, or command handler
 
 ## Toggle on/off
 
-Toggle the margin visibility on/off from a new button on the Standard toolbar.
+Toggle the margin visibility on/off using **Toggle Extensibility Margin** on the Standard toolbar. Your choice is remembered across Visual Studio sessions. New profiles start with the margin hidden.
 
 ![Margin Toggle](art/margin-toggle.png)
 
 ## Editor status margin
 
-Shows content type, classification, and text view roles alongside Visual Studio's built-in editor information. Encoding and selection information are provided by Visual Studio itself.
+Shows two compact, regular-weight values: content type and classification. Long names are shortened visually with an ellipsis; hover to see the full details. Text view roles are included in the content-type tooltip instead of taking up space in the row. Encoding and selection information are provided by Visual Studio itself.
+
+![Margin](art/margin.png)
 
 ### Content type
 
-Shows the content type of the ITextBuffer at the caret position. The hover tooltip shows the name of the base content type.
+Shows the content type of the source buffer at the caret position, including in projection editors. The tooltip groups unique base types and text view roles into explained sections. View and document types appear only when they differ from the type at the caret. Click to copy the full inheritance details.
 
 Useful when troubleshooting content type mismatches in providers and listeners.
 
 ### Classification
 
-Displays the name of the classification at the caret position in the document. The hover tooltip shows the inheritance hierarchy of the EditorFormatDefinition's BaseDefinition attribute.
+Displays the primary classification at the caret. Hover to see all overlapping classification types returned by the editor and their full inheritance hierarchies. `None` means no classification is available at that position.
 
-![Classifications](art/margin-classification.png)
+### Copy diagnostics
 
-### Roles
+Click either value to copy content types, text view roles, and classification details to the clipboard. The report contains no document text or file paths.
 
-Shows a text view role. Hover to see all roles supported by the current view.
+### Lightweight updates
+
+Caret and classification updates are coalesced, and classification changes away from the caret are ignored. Classifier services are initialized only when needed and released while the margin or editor tab is hidden. Projection-buffer and content-type changes invalidate cached diagnostics.
 
 ## Typical workflows
 
 1. Move the caret through sample text while validating content type/classification behavior.
 2. Hover margin items to inspect additional metadata.
-3. Toggle the margin on/off from the Standard toolbar when not needed.
+3. Click either value to copy diagnostics into a bug report.
+4. Toggle the margin on/off from the Standard toolbar when not needed.
 
 ## Installation
 
@@ -61,18 +66,3 @@ Install from the [Marketplace](https://marketplace.visualstudio.com/items?itemNa
 ## License
 
 [Apache 2.0](LICENSE)
-
-## Building and debugging
-
-Open `ExtensibilityMargin.slnx` in Visual Studio 2022 17.14 or newer with the **Visual Studio extension development** workload and the .NET Framework 4.8 targeting pack installed. The SDK-style VSIX project also requires the .NET 9 SDK or newer.
-
-Select **Debug / Any CPU** and press **F5** or **Ctrl+F5** to deploy and launch the extension in the experimental instance. Enable the **Standard** toolbar to find **Toggle Extensibility Margin**.
-
-For a release build, run these commands from a Visual Studio Developer PowerShell:
-
-```powershell
-msbuild ExtensibilityMargin.slnx /t:Restore /p:Configuration=Release
-msbuild ExtensibilityMargin.slnx /m /p:Configuration=Release /p:DeployExtension=false
-```
-
-The VSIX is written to `src\bin\Release\net48\ExtensibilityMargin.vsix`. CI builds pull requests and publishes push/manual builds to Open VSIX; Marketplace publishing and GitHub releases require a `[release]` commit message or a manual run.
